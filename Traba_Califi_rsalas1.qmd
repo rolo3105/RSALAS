@@ -1,0 +1,169 @@
+---
+title: "rsalas"
+format: html
+editor: visual
+---
+
+## INFORME DCA Y DBCA
+
+***By: Rolando Salas López***
+
+Con la ayuda de ChatGPT, generar estos dos diseños (DCA y DBCA)
+
+### 1.-Diseño completo al azar (DCA)
+
+Para fines de este ejercicio se considera 4 dosis de fertilizacion nitrogenada:-0 -50 -100 -150
+
+-   Instalar y cargar el paquete agricolae
+
+```{r}
+library(agricolae)
+```
+
+-   Vector de tratamientos (dosis de fertilización nitrogenada)
+
+    ```{r}
+    trt <- c(0, 50, 100, 150)
+    ```
+
+<!-- -->
+
+-   Definir el número de repeticiones
+
+    ```{r}
+    rep <- 5
+    ```
+
+<!-- -->
+
+-   Creación de un diseño de bloques completamente al azar (CRD) para el experimento 'trt' especifica los tratamientos, 'r' indica el número de repeticiones, y 'seed' establece la semilla para la aleatorización
+
+    ```{r}
+    dca <- design.crd(trt = trt, r = rep, seed = 123)
+    ```
+
+-   Mostrar el diseño completo
+
+    ```{r}
+    print(dca)
+    ```
+
+-   Restar 100 a los números de las parcelas si todos comienzan en 100
+
+    ```{r}
+    dca$book$plots <- dca$book$plots - 100
+    ```
+
+<!-- -->
+
+-   Nuevmente mostramos el diseño completo al azar, con los **plots,** que inicien en 1
+
+    ```{r}
+    print(dca)
+    ```
+
+### 2.-Diseño de bloques completo al azar (DBCA)
+
+-   Definimos los factores
+
+```{r}
+library(agricolae)
+dosis <-c(0,50,100,150)
+variedad <-c("inia_1","inia_2")
+
+```
+
+-   Crear todas las combinaciones posibles de dosis y variedad
+
+    ```{r}
+    tratamientos <- expand.grid(dosis = dosis, variedad = variedad)
+    ```
+
+-   Unificar los tratamientos en una sola variable para ser utilizada en el diseño
+
+```{r}
+tratamientos$trat <- paste(tratamientos$dosis, tratamientos$variedad, sep = "-")
+```
+
+-   Crear el Diseño de Bloques Completos al Azar (DBCA) con 5 bloques
+
+    ```{r}
+    ds <- design.rcbd(trt = tratamientos$trat, r = 5)
+    ```
+
+Mostrar el diseño
+
+```{r}
+ds
+```
+
+-   Modelo ANOVA
+
+    ```{r}
+    library(readxl) 
+    fb <- read_excel("LA MOLINA 2014 POTATO WUE (FB).xlsx", 
+        sheet = "fb")
+    str(fb)
+    ```
+
+    ```{r}
+    modelo <- aov(lfa ~ riego + geno + riego*geno + bloque, data = fb)
+    anova(modelo)
+    ```
+
+    ```{r}
+    plot(modelo)
+    ```
+
+    Comparacion de medias (test de Duncan)
+
+    ```{r}
+    library(agricolae)
+
+    mc <- agricolae::duncan.test(y=modelo, trt = c("riego", "geno"))
+    mc
+    ```
+
+    Comparacion de medias
+
+    ```{r}
+    #install.packages("emmeans")
+    #install.packages("multcomp")
+    #install.packages("tidyverse")
+    library(tidyverse)
+    ```
+
+```{r}
+library(emmeans)
+```
+
+```{r}
+library(multcomp)
+```
+
+```{r}
+mc <- emmeans(modelo, ~ riego | geno) %>%
+  data.frame()
+mc
+```
+
+GRAFICAS
+
+```{r}
+##install.packages("inti")
+##install.packages("shiny")
+library(inti)
+library(shiny)
+```
+
+```{r}
+plot_smr(data = mc
+         , type = "bar"
+         , x = "geno"
+         , y = "emmean"
+         , group = "riego"
+         , sig = NULL
+         , error = "SE"
+         , ylimits = c(0, 12000, 2000)
+         )
+```
